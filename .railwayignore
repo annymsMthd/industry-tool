@@ -1,0 +1,7 @@
+build/
+artifacts/
+.github/
+*.md
+.env.local
+.env.ci
+docker-compose*.yaml
