@@ -1,0 +1,33 @@
+FROM node:24.9.0-slim as ui-deps
+
+WORKDIR /app
+
+COPY frontend/package.json frontend/yarn.lock ./
+COPY frontend/packages/ ./packages
+
+RUN yarn install --frozen-lockfile
+
+FROM node:24.9.0-slim as ui-build
+
+WORKDIR /app
+
+COPY frontend .
+COPY --from=ui-deps /app/node_modules ./node_modules
+
+ENV API_SERVICE=http://localhost:8080/api/
+
+RUN yarn build && yarn install --production --ignore-scripts --prefer-offline
+
+FROM node:24.9.0-slim as publish-ui
+WORKDIR /app
+ENV NODE_ENV production
+
+COPY --from=ui-build /app/next.config.ts ./
+COPY --from=ui-build /app/public ./public
+COPY --from=ui-build /app/.next ./.next
+COPY --from=ui-build /app/node_modules ./node_modules
+COPY --from=ui-build /app/package.json ./package.json
+
+EXPOSE 3000
+
+CMD ["yarn", "start"]
