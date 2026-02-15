@@ -24,6 +24,12 @@ ENV API_SERVICE=http://localhost:8080/api/
 RUN yarn build && yarn install --production --ignore-scripts --prefer-offline
 
 FROM node:24.9.0-slim as publish-ui
+
+# Install CA certificates for HTTPS requests
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 ENV NODE_ENV production
 
