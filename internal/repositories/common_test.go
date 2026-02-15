@@ -47,5 +47,16 @@ func setupDatabase() (*sql.DB, error) {
 		return nil, errors.Wrap(err, "failed to get database")
 	}
 
+	// Set connection pool limits to prevent exhausting PostgreSQL connections
+	db.SetMaxOpenConns(5)
+	db.SetMaxIdleConns(2)
+
 	return db, nil
+}
+
+func cleanupDatabase(db *sql.DB, databaseName string) error {
+	if db != nil {
+		db.Close()
+	}
+	return nil
 }

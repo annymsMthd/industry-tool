@@ -38,11 +38,6 @@ func (m *MockStockpileMarkersRepository) Delete(ctx context.Context, marker *mod
 	return args.Error(0)
 }
 
-// Mock router
-type MockRouter struct{}
-
-func (m *MockRouter) RegisterRestAPIRoute(path string, auth web.AuthAccess, handler func(*web.HandlerArgs) (any, *web.HttpError), methods ...string) {}
-
 func Test_StockpileMarkersController_GetStockpiles_Success(t *testing.T) {
 	mockRepo := new(MockStockpileMarkersRepository)
 	mockRouter := &MockRouter{}

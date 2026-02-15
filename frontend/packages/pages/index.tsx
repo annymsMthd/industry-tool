@@ -1,6 +1,7 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../pages/api/auth/[...nextauth]";
+import { useState, useEffect } from 'react';
+import { useSession } from "next-auth/react";
 import Navbar from "@industry-tool/components/Navbar";
+import Loading from "@industry-tool/components/loading";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -10,35 +11,29 @@ import Stack from '@mui/material/Stack';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
-export default async function Home() {
-  const session = await getServerSession(authOptions);
-  const isAuthenticated = !!session;
+export default function Home() {
+  const { data: session, status } = useSession();
+  const [assetMetrics, setAssetMetrics] = useState({ totalValue: 0, totalDeficit: 0 });
 
-  // Fetch assets summary for authenticated users
-  let assetMetrics = { totalValue: 0, totalDeficit: 0 };
-  if (isAuthenticated && session?.providerAccountId) {
-    try {
-      const backend = process.env.BACKEND_URL as string;
-      const backendKey = process.env.BACKEND_KEY as string;
-
-      const response = await fetch(`${backend}v1/assets/summary`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'USER-ID': session.providerAccountId,
-          'BACKEND-KEY': backendKey,
-        },
-        cache: 'no-store', // Don't cache to always show fresh data
-      });
-
-      if (response.ok) {
-        assetMetrics = await response.json();
-      }
-    } catch (error) {
-      console.error('[Landing] Failed to fetch asset metrics:', error);
-      // Silently fail and show 0 values rather than breaking the page
+  useEffect(() => {
+    if (status === "authenticated" && session?.providerAccountId) {
+      // Fetch assets summary
+      fetch('/api/assets/summary')
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          return { totalValue: 0, totalDeficit: 0 };
+        })
+        .then(data => setAssetMetrics(data))
+        .catch(error => {
+          console.error('[Landing] Failed to fetch asset metrics:', error);
+          // Silently fail and show 0 values rather than breaking the page
+        });
     }
-  }
+  }, [status, session]);
+
+  const isAuthenticated = status === "authenticated";
 
   return (
     <>

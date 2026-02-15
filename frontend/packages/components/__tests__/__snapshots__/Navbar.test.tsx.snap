@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Navbar Component should match snapshot 1`] = `
+exports[`Navbar Component should match snapshot when not authenticated 1`] = `
 <div>
   <header
     class="MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionFixed mui-fixed css-zanzjh-MuiPaper-root-MuiAppBar-root"
@@ -59,6 +59,27 @@ exports[`Navbar Component should match snapshot 1`] = `
         tabindex="0"
       >
         Stockpiles
+      </a>
+      <a
+        class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textInherit MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorInherit MuiButton-root MuiButton-text MuiButton-textInherit MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorInherit css-plnrbk-MuiButtonBase-root-MuiButton-root"
+        href="/contacts"
+        tabindex="0"
+      >
+        <span
+          class="MuiBadge-root css-63ezxx-MuiBadge-root"
+        >
+          Contacts
+          <span
+            class="MuiBadge-badge MuiBadge-standard MuiBadge-invisible MuiBadge-anchorOriginTopRight MuiBadge-anchorOriginTopRightRectangular MuiBadge-overlapRectangular MuiBadge-colorError css-lpmwdj-MuiBadge-badge"
+          />
+        </span>
+      </a>
+      <a
+        class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textInherit MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorInherit MuiButton-root MuiButton-text MuiButton-textInherit MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorInherit css-plnrbk-MuiButtonBase-root-MuiButton-root"
+        href="/marketplace"
+        tabindex="0"
+      >
+        Marketplace
       </a>
     </div>
   </header>
