@@ -116,14 +116,14 @@ export const authOptions = {
     },
   },
   events: {
-    async signIn({ user, account, profile }) {
+    async signIn(message) {
       console.log('[NextAuth] Sign in event:', {
-        user: user?.name,
-        provider: account?.provider,
-        accountId: account?.providerAccountId,
+        user: message.user?.name,
+        provider: message.account?.provider,
+        accountId: message.account?.providerAccountId,
       });
     },
-    async signOut({ token }) {
+    async signOut() {
       console.log('[NextAuth] Sign out event');
     },
   },
