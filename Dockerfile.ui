@@ -1,5 +1,7 @@
 FROM node:24.9.0-slim as ui-deps
 
+ENV BACKEND_KEY=${BACKEND_KEY}
+
 WORKDIR /app
 
 COPY frontend/package.json frontend/yarn.lock ./

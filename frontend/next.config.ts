@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "BACKEND-KEY",
-            value: process.env.BACKEND_KEY as string,
+            value: process.env.BACKEND_KEY || "",
           },
         ],
       },
