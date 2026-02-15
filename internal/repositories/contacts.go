@@ -42,7 +42,7 @@ func (r *Contacts) GetByUser(ctx context.Context, userID int64) ([]*models.Conta
 	}
 	defer rows.Close()
 
-	var contacts []*models.Contact
+	contacts := []*models.Contact{}
 	for rows.Next() {
 		var contact models.Contact
 		err = rows.Scan(

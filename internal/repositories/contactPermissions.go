@@ -31,7 +31,7 @@ func (r *ContactPermissions) GetByContact(ctx context.Context, contactID int64, 
 	}
 	defer rows.Close()
 
-	var permissions []*models.ContactPermission
+	permissions := []*models.ContactPermission{}
 	for rows.Next() {
 		var perm models.ContactPermission
 		err = rows.Scan(

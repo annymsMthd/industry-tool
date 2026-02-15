@@ -72,7 +72,7 @@ func (r *ForSaleItems) GetByUser(ctx context.Context, userID int64) ([]*models.F
 	}
 	defer rows.Close()
 
-	var items []*models.ForSaleItem
+	items := []*models.ForSaleItem{}
 	for rows.Next() {
 		var item models.ForSaleItem
 		err = rows.Scan(
@@ -148,7 +148,7 @@ func (r *ForSaleItems) GetBrowsableItems(ctx context.Context, buyerUserID int64,
 	}
 	defer rows.Close()
 
-	var items []*models.ForSaleItem
+	items := []*models.ForSaleItem{}
 	for rows.Next() {
 		var item models.ForSaleItem
 		err = rows.Scan(

@@ -101,7 +101,7 @@ func (r *PurchaseTransactions) GetByBuyer(ctx context.Context, buyerUserID int64
 	}
 	defer rows.Close()
 
-	var transactions []*models.PurchaseTransaction
+	transactions := []*models.PurchaseTransaction{}
 	for rows.Next() {
 		var tx models.PurchaseTransaction
 		err = rows.Scan(
@@ -157,7 +157,7 @@ func (r *PurchaseTransactions) GetBySeller(ctx context.Context, sellerUserID int
 	}
 	defer rows.Close()
 
-	var transactions []*models.PurchaseTransaction
+	transactions := []*models.PurchaseTransaction{}
 	for rows.Next() {
 		var tx models.PurchaseTransaction
 		err = rows.Scan(
@@ -220,7 +220,7 @@ func (r *PurchaseTransactions) GetPendingForSeller(ctx context.Context, sellerUs
 	}
 	defer rows.Close()
 
-	var transactions []*models.PurchaseTransaction
+	transactions := []*models.PurchaseTransaction{}
 	for rows.Next() {
 		var tx models.PurchaseTransaction
 		err = rows.Scan(
