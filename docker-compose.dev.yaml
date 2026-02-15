@@ -13,6 +13,19 @@ services:
     depends_on:
       - database
   # frontend:
+  #   image: node:24.9.0-slim
+  #   working_dir: /app
+  #   command: sh -c "yarn install && yarn dev"
+  #   ports:
+  #     - "8080:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   environment:
+  #     - NODE_ENV=development
+  #     - API_SERVICE=http://backend:80/api/
+  #     - NEXTAUTH_URL=http://localhost:8080
   #   depends_on:
   #     - backend
   database:

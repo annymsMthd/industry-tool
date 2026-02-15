@@ -46,6 +46,20 @@ import Switch from '@mui/material/Switch';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SellIcon from '@mui/icons-material/Sell';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+type ForSaleListing = {
+  id: number;
+  typeId: number;
+  ownerId: number;
+  locationId: number;
+  containerId?: number;
+  divisionNumber?: number;
+  quantityAvailable: number;
+  pricePerUnit: number;
+  notes?: string;
+};
 
 export type AssetsListProps = {
   assets?: AssetsResponse;
@@ -112,6 +126,24 @@ export default function AssetsList(props: AssetsListProps) {
   const desiredQuantityInputRef = useRef<HTMLInputElement>(null);
   const [refreshingPrices, setRefreshingPrices] = useState(false);
 
+  // For-sale listing state
+  const [listingDialogOpen, setListingDialogOpen] = useState(false);
+  const [listingAsset, setListingAsset] = useState<{
+    asset: Asset;
+    locationId: number;
+    containerId?: number;
+    divisionNumber?: number;
+  } | null>(null);
+  const [submittingListing, setSubmittingListing] = useState(false);
+  const [editingListingId, setEditingListingId] = useState<number | null>(null);
+  const listingQuantityRef = useRef<HTMLInputElement>(null);
+  const listingPriceRef = useRef<HTMLInputElement>(null);
+  const listingNotesRef = useRef<HTMLInputElement>(null);
+  const [listingTotalValue, setListingTotalValue] = useState<string>('');
+
+  // Track active for-sale listings
+  const [forSaleListings, setForSaleListings] = useState<ForSaleListing[]>([]);
+
   const handleQuantityChange = (value: string) => {
     // Remove all non-digit characters
     const numericValue = value.replace(/\D/g, '');
@@ -133,6 +165,30 @@ export default function AssetsList(props: AssetsListProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchForSaleListings = async () => {
+    if (!session) return;
+
+    try {
+      const response = await fetch('/api/for-sale');
+      if (response.ok) {
+        const data = await response.json();
+        setForSaleListings(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch for-sale listings:', error);
+    }
+  };
+
+  const getListingForAsset = (asset: Asset, locationId: number, containerId?: number, divisionNumber?: number): ForSaleListing | undefined => {
+    return forSaleListings.find(listing =>
+      listing.typeId === asset.typeId &&
+      listing.ownerId === asset.ownerId &&
+      listing.locationId === locationId &&
+      (listing.containerId || 0) === (containerId || 0) &&
+      (listing.divisionNumber || 0) === (divisionNumber || 0)
+    );
   };
 
   const handleRefreshPrices = async () => {
@@ -157,6 +213,9 @@ export default function AssetsList(props: AssetsListProps) {
   useEffect(() => {
     if (!props.assets && session) {
       refetchAssets();
+    }
+    if (session) {
+      fetchForSaleListings();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -615,6 +674,127 @@ export default function AssetsList(props: AssetsListProps) {
     });
   };
 
+  const handleOpenListingDialog = (asset: Asset, locationId: number, containerId?: number, divisionNumber?: number, existingListing?: ForSaleListing) => {
+    setListingAsset({ asset, locationId, containerId, divisionNumber });
+
+    if (existingListing) {
+      // Editing existing listing
+      setEditingListingId(existingListing.id);
+      // Set all fields via refs after dialog opens
+      setTimeout(() => {
+        if (listingQuantityRef.current) {
+          listingQuantityRef.current.value = existingListing.quantityAvailable.toLocaleString();
+        }
+        if (listingPriceRef.current) {
+          listingPriceRef.current.value = existingListing.pricePerUnit.toLocaleString();
+        }
+        if (listingNotesRef.current) {
+          listingNotesRef.current.value = existingListing.notes || '';
+        }
+        updateTotalValue();
+      }, 0);
+    } else {
+      // Creating new listing
+      setEditingListingId(null);
+      // Set initial values via refs after dialog opens
+      setTimeout(() => {
+        if (listingQuantityRef.current) {
+          listingQuantityRef.current.value = asset.quantity.toLocaleString();
+        }
+        if (listingPriceRef.current) {
+          listingPriceRef.current.value = '';
+        }
+        if (listingNotesRef.current) {
+          listingNotesRef.current.value = '';
+        }
+        updateTotalValue();
+      }, 0);
+    }
+
+    setListingDialogOpen(true);
+  };
+
+  const updateTotalValue = () => {
+    const quantity = listingQuantityRef.current?.value.replace(/,/g, '') || '0';
+    const price = listingPriceRef.current?.value.replace(/,/g, '') || '0';
+    const quantityNum = parseInt(quantity) || 0;
+    const priceNum = parseInt(price) || 0;
+    const total = quantityNum * priceNum;
+    setListingTotalValue(total > 0 ? total.toLocaleString() : '');
+  };
+
+  const handleListingInputChange = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (!ref.current) return;
+    const numericValue = ref.current.value.replace(/\D/g, '');
+    const formatted = numericValue ? parseInt(numericValue).toLocaleString() : '';
+    ref.current.value = formatted;
+    updateTotalValue();
+  };
+
+  const handleCreateListing = async () => {
+    if (!listingAsset || !session) return;
+
+    const quantityValue = listingQuantityRef.current?.value.replace(/,/g, '') || '0';
+    const priceValue = listingPriceRef.current?.value.replace(/,/g, '') || '0';
+
+    const quantity = parseInt(quantityValue);
+    const price = parseInt(priceValue);
+    const notes = listingNotesRef.current?.value || '';
+
+    if (!quantity || !price) return;
+
+    setSubmittingListing(true);
+    try {
+      const url = editingListingId ? `/api/for-sale/${editingListingId}` : '/api/for-sale';
+      const method = editingListingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          typeId: listingAsset.asset.typeId,
+          ownerType: listingAsset.asset.ownerType,
+          ownerId: listingAsset.asset.ownerId,
+          locationId: listingAsset.locationId,
+          containerId: listingAsset.containerId,
+          divisionNumber: listingAsset.divisionNumber,
+          quantityAvailable: quantity,
+          pricePerUnit: price,
+          notes: notes || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        setListingDialogOpen(false);
+        // Refresh listings to show the updated listing indicator
+        await fetchForSaleListings();
+      }
+    } finally {
+      setSubmittingListing(false);
+    }
+  };
+
+  const handleDeleteListing = async () => {
+    if (!editingListingId || !session) return;
+
+    if (!confirm('Are you sure you want to delete this listing?')) return;
+
+    setSubmittingListing(true);
+    try {
+      const response = await fetch(`/api/for-sale/${editingListingId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setListingDialogOpen(false);
+        // Refresh listings to remove the deleted listing indicator
+        await fetchForSaleListings();
+      }
+    } finally {
+      setSubmittingListing(false);
+    }
+  };
+
   // Show loading state first, before checking if assets are empty
   if (loading) {
     return (
@@ -690,7 +870,28 @@ export default function AssetsList(props: AssetsListProps) {
                   }),
                 }}
               >
-                <TableCell>{asset.name}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {asset.name}
+                    {(() => {
+                      const listing = getListingForAsset(asset, locationId, containerId, divisionNumber);
+                      if (listing) {
+                        return (
+                          <Chip
+                            icon={<CheckCircleIcon />}
+                            label={`${listing.quantityAvailable.toLocaleString()} @ ${listing.pricePerUnit.toLocaleString()} ISK`}
+                            size="medium"
+                            color="success"
+                            variant="filled"
+                            onClick={() => handleOpenListingDialog(asset, locationId, containerId, divisionNumber, listing)}
+                            sx={{ fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
+                  </Box>
+                </TableCell>
                 <TableCell align="right">{asset.quantity.toLocaleString()}</TableCell>
                 <TableCell align="right">
                   {asset.desiredQuantity ? (
@@ -766,6 +967,7 @@ export default function AssetsList(props: AssetsListProps) {
                   <IconButton
                     size="small"
                     onClick={() => handleOpenStockpileModal(asset, locationId, containerId, divisionNumber)}
+                    title="Set stockpile target"
                   >
                     {asset.desiredQuantity ? <EditIcon fontSize="small" /> : <AddIcon fontSize="small" />}
                   </IconButton>
@@ -773,10 +975,19 @@ export default function AssetsList(props: AssetsListProps) {
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteStockpile(asset, locationId, containerId, divisionNumber)}
+                      title="Remove stockpile target"
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   )}
+                  <IconButton
+                    size="small"
+                    onClick={() => handleOpenListingDialog(asset, locationId, containerId, divisionNumber)}
+                    title="List for sale"
+                    color="primary"
+                  >
+                    <SellIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -1241,6 +1452,82 @@ export default function AssetsList(props: AssetsListProps) {
             <Button onClick={() => setStockpileModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveStockpile} variant="contained" disabled={!desiredQuantity}>
               Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* List for Sale Dialog */}
+        <Dialog
+          open={listingDialogOpen}
+          onClose={() => setListingDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>{editingListingId ? 'Edit Listing' : 'List Item for Sale'}</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="body2" gutterBottom>
+                <strong>Item:</strong> {listingAsset?.asset.name}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Owner:</strong> {listingAsset?.asset.ownerName}
+              </Typography>
+              <Typography variant="body2" gutterBottom sx={{ mb: 2 }}>
+                <strong>Available Quantity:</strong> {listingAsset?.asset.quantity.toLocaleString()}
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Quantity to List"
+                type="text"
+                inputRef={listingQuantityRef}
+                onBlur={() => handleListingInputChange(listingQuantityRef)}
+                sx={{ mb: 2 }}
+                required
+                placeholder="0"
+                helperText={`Max: ${listingAsset?.asset.quantity.toLocaleString() || 0}`}
+              />
+
+              <TextField
+                fullWidth
+                label="Price Per Unit (ISK)"
+                type="text"
+                inputRef={listingPriceRef}
+                onBlur={() => handleListingInputChange(listingPriceRef)}
+                sx={{ mb: 2 }}
+                required
+                placeholder="0"
+                helperText={listingTotalValue ? `Total Value: ${listingTotalValue} ISK` : undefined}
+              />
+
+              <TextField
+                fullWidth
+                label="Notes (optional)"
+                multiline
+                rows={3}
+                inputRef={listingNotesRef}
+                placeholder="Add any notes about this listing..."
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            {editingListingId && (
+              <Button
+                onClick={handleDeleteListing}
+                color="error"
+                disabled={submittingListing}
+                sx={{ mr: 'auto' }}
+              >
+                Delete
+              </Button>
+            )}
+            <Button onClick={() => setListingDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleCreateListing}
+              variant="contained"
+              disabled={submittingListing}
+            >
+              {submittingListing ? (editingListingId ? 'Updating...' : 'Creating...') : (editingListingId ? 'Update Listing' : 'Create Listing')}
             </Button>
           </DialogActions>
         </Dialog>

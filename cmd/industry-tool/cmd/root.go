@@ -68,6 +68,12 @@ var rootCmd = &cobra.Command{
 		playerCorporationAssetsRepository := repositories.NewCorporationAssets(db)
 		stockpileMarkersRepository := repositories.NewStockpileMarkers(db)
 		marketPricesRepository := repositories.NewMarketPrices(db)
+		contactsRepository := repositories.NewContacts(db)
+		contactPermissionsRepository := repositories.NewContactPermissions(db)
+		forSaleItemsRepository := repositories.NewForSaleItems(db)
+		purchaseTransactionsRepository := repositories.NewPurchaseTransactions(db)
+		buyOrdersRepository := repositories.NewBuyOrders(db)
+		salesAnalyticsRepository := repositories.NewSalesAnalytics(db)
 
 		esiClient := client.NewEsiClient(settings.OAuthClientID, settings.OAuthClientSecret)
 
@@ -84,6 +90,13 @@ var rootCmd = &cobra.Command{
 		controllers.NewStockpiles(router, assetsRepository)
 		controllers.NewMarketPrices(router, marketPricesUpdater)
 		controllers.NewJanice(router)
+		controllers.NewContacts(router, contactsRepository, contactPermissionsRepository, db)
+		controllers.NewContactPermissions(router, contactPermissionsRepository)
+		controllers.NewForSaleItems(router, forSaleItemsRepository, contactPermissionsRepository)
+		controllers.NewPurchases(router, db, purchaseTransactionsRepository, forSaleItemsRepository, contactPermissionsRepository)
+		controllers.NewBuyOrders(router, buyOrdersRepository, contactPermissionsRepository)
+		controllers.NewItemTypes(router, itemTypesRepository)
+		controllers.NewAnalytics(router, salesAnalyticsRepository)
 
 		group.Go(router.Run(ctx))
 

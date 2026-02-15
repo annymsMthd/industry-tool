@@ -72,3 +72,68 @@ do update set
 
 	return nil
 }
+
+// SearchItemTypes searches for item types by name (case-insensitive, partial match)
+func (r *ItemTypeRepository) SearchItemTypes(ctx context.Context, query string, limit int) ([]models.EveInventoryType, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+
+	searchQuery := `
+		SELECT type_id, type_name, volume, icon_id
+		FROM asset_item_types
+		WHERE LOWER(type_name) LIKE LOWER($1)
+		ORDER BY
+			CASE
+				WHEN LOWER(type_name) = LOWER($3) THEN 1
+				WHEN LOWER(type_name) LIKE LOWER($3) || '%' THEN 2
+				ELSE 3
+			END,
+			type_name
+		LIMIT $2
+	`
+
+	rows, err := r.db.QueryContext(ctx, searchQuery, "%"+query+"%", limit, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to search item types")
+	}
+	defer rows.Close()
+
+	var items []models.EveInventoryType
+	for rows.Next() {
+		var item models.EveInventoryType
+		err := rows.Scan(&item.TypeID, &item.TypeName, &item.Volume, &item.IconID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to scan item type")
+		}
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
+// GetItemTypeByName gets an exact item type by name
+func (r *ItemTypeRepository) GetItemTypeByName(ctx context.Context, typeName string) (*models.EveInventoryType, error) {
+	query := `
+		SELECT type_id, type_name, volume, icon_id
+		FROM asset_item_types
+		WHERE type_name = $1
+	`
+
+	var item models.EveInventoryType
+	err := r.db.QueryRowContext(ctx, query, typeName).Scan(
+		&item.TypeID,
+		&item.TypeName,
+		&item.Volume,
+		&item.IconID,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, errors.New("item type not found")
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get item type")
+	}
+
+	return &item, nil
+}

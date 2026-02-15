@@ -594,6 +594,10 @@
   version "0.0.0"
   resolved "file:packages/styles"
 
+"@industry-tool/utils@file:/app/packages/utils":
+  version "0.0.0"
+  resolved "file:packages/utils"
+
 "@inquirer/external-editor@^1.0.0":
   version "1.0.3"
   resolved "https://registry.npmjs.org/@inquirer/external-editor/-/external-editor-1.0.3.tgz"
