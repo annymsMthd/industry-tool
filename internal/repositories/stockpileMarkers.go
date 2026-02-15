@@ -31,7 +31,7 @@ func (r *StockpileMarkers) GetByUser(ctx context.Context, userID int64) ([]*mode
 	}
 	defer rows.Close()
 
-	var markers []*models.StockpileMarker
+	markers := []*models.StockpileMarker{}
 	for rows.Next() {
 		var marker models.StockpileMarker
 		err = rows.Scan(
