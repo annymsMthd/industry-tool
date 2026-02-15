@@ -1,4 +1,4 @@
-.PHONY: build test test-backend test-frontend test-all test-clean dev dev-clean dev-build
+.PHONY: build test test-backend test-frontend test-all test-clean dev dev-clean dev-build build-production build-production-backend build-production-frontend
 
 # Docker Compose command (v1: docker-compose, v2: docker compose)
 DOCKER_COMPOSE ?= docker-compose
@@ -84,3 +84,23 @@ test-clean:
 	@$(DOCKER_COMPOSE) -f docker-compose.test.yaml down --remove-orphans 2>/dev/null || true
 
 test: test-all
+
+# Production build targets
+build-production-backend:
+	@echo "Building production backend image..."
+	docker build --target final-backend -t industry-tool-backend:latest -f Dockerfile .
+	@echo "✓ Backend production image built successfully"
+
+build-production-frontend:
+	@echo "Building production frontend image..."
+	docker build --target publish-ui -t industry-tool-frontend:latest -f Dockerfile.ui .
+	@echo "✓ Frontend production image built successfully"
+
+build-production: build-production-backend build-production-frontend
+	@echo ""
+	@echo "========================================"
+	@echo "✓ All production images built successfully!"
+	@echo "========================================"
+	@echo "Backend:  industry-tool-backend:latest"
+	@echo "Frontend: industry-tool-frontend:latest"
+	@echo ""
